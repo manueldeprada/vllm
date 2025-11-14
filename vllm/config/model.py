@@ -66,7 +66,7 @@ TaskOption = Literal["auto", "generate", "embedding", "embed", "classify",
 TokenizerMode = Literal["auto", "slow", "mistral", "custom"]
 ModelDType = Literal["auto", "half", "float16", "bfloat16", "float", "float32"]
 LogprobsMode = Literal["raw_logits", "raw_logprobs", "processed_logits",
-                       "processed_logprobs"]
+                       "processed_logprobs", "raw_processed_logprobs"]
 HfOverrides = Union[dict[str, Any], Callable[[PretrainedConfig],
                                              PretrainedConfig]]
 ModelImpl = Literal["auto", "vllm", "transformers", "terratorch"]

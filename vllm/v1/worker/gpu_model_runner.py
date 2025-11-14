@@ -2098,6 +2098,7 @@ class GPUModelRunner(LoRAModelRunnerMixin, KVConnectorModelRunnerMixin):
     ) -> tuple[
             dict[str, int],
             Optional[LogprobsLists],
+            Optional[LogprobsLists],
             list[list[int]],
             dict[str, Optional[LogprobsTensors]],
             list[str],
@@ -2123,9 +2124,12 @@ class GPUModelRunner(LoRAModelRunnerMixin, KVConnectorModelRunnerMixin):
 
         # NOTE: GPU -> CPU Sync happens here.
         # Move as many CPU operations as possible before this sync point.
-        logprobs_tensors = sampler_output.logprobs_tensors
-        logprobs_lists = logprobs_tensors.tolists() \
-            if logprobs_tensors is not None else None
+        raw_logprobs_tensors = sampler_output.raw_logprobs_tensors
+        raw_logprobs_lists = raw_logprobs_tensors.tolists() \
+            if raw_logprobs_tensors is not None else None
+        processed_logprobs = sampler_output.processed_logprobs
+        processed_logprobs_lists = processed_logprobs.tolists() \
+            if processed_logprobs is not None else None
 
         # Compute prompt logprobs if needed.
         prompt_logprobs_dict = self._get_prompt_logprobs_dict(
@@ -2204,7 +2208,8 @@ class GPUModelRunner(LoRAModelRunnerMixin, KVConnectorModelRunnerMixin):
 
         return (
             num_nans_in_logits,
-            logprobs_lists,
+            raw_logprobs_lists,
+            processed_logprobs_lists,
             valid_sampled_token_ids,
             prompt_logprobs_dict,
             req_ids_output_copy,
@@ -2404,7 +2409,8 @@ class GPUModelRunner(LoRAModelRunnerMixin, KVConnectorModelRunnerMixin):
         with record_function_or_nullcontext("Bookkeep"):
             (
                 num_nans_in_logits,
-                logprobs_lists,
+                raw_logprobs_lists,
+                processed_logprobs_lists,
                 valid_sampled_token_ids,
                 prompt_logprobs_dict,
                 req_ids_output_copy,
@@ -2427,7 +2433,8 @@ class GPUModelRunner(LoRAModelRunnerMixin, KVConnectorModelRunnerMixin):
             req_ids=req_ids_output_copy,
             req_id_to_index=req_id_to_index_output_copy,
             sampled_token_ids=valid_sampled_token_ids,
-            logprobs=logprobs_lists,
+            raw_logprobs=raw_logprobs_lists,
+            processed_logprobs=processed_logprobs_lists,
             prompt_logprobs_dict=prompt_logprobs_dict,
             pooler_output=[],
             kv_connector_output=kv_connector_output,

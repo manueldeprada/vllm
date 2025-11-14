@@ -78,7 +78,8 @@ class SamplerOutput:
     # All requests are padded to max_num_generated_tokens.
     # PLACEHOLDER_TOKEN_ID (-1 by default) is used for padding.
     sampled_token_ids: torch.Tensor
-    logprobs_tensors: Optional[LogprobsTensors]
+    raw_logprobs_tensors: Optional[LogprobsTensors]
+    processed_logprobs_tensors: Optional[LogprobsTensors]
 
 
 @dataclass
@@ -112,7 +113,8 @@ class ModelRunnerOutput:
     # [num_reqs, max_num_logprobs + 1]
     # [num_reqs, max_num_logprobs + 1]
     # [num_reqs]
-    logprobs: Optional[LogprobsLists]
+    raw_logprobs: Optional[LogprobsLists]
+    processed_logprobs: Optional[LogprobsLists]
 
     # req_id -> (token_ids, logprobs, ranks)
     # [prompt_len, num_prompt_logprobs]
@@ -155,7 +157,8 @@ class DraftTokenIds:
 EMPTY_MODEL_RUNNER_OUTPUT = ModelRunnerOutput(req_ids=[],
                                               req_id_to_index={},
                                               sampled_token_ids=[],
-                                              logprobs=None,
+                                              raw_logprobs=None,
+                                              processed_logprobs=None,
                                               prompt_logprobs_dict={},
                                               pooler_output=[],
                                               num_nans_in_logits=None)
