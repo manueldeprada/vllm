@@ -2123,9 +2123,15 @@ class GPUModelRunner(LoRAModelRunnerMixin, KVConnectorModelRunnerMixin):
 
         # NOTE: GPU -> CPU Sync happens here.
         # Move as many CPU operations as possible before this sync point.
-        logprobs_tensors = sampler_output.logprobs_tensors
-        logprobs_lists = logprobs_tensors.tolists() \
-            if logprobs_tensors is not None else None
+        logprobs_tensors = sampler_output.raw_logprobs_tensors or sampler_output.processed_logprobs_tensors
+
+        logprobs_lists = logprobs_tensors.tolists(
+            logprobs_at_temperature=(
+                sampler_output.processed_logprobs_tensors.logprobs
+                if sampler_output.raw_logprobs_tensors and sampler_output.processed_logprobs_tensors
+                else None
+            )
+        ) if logprobs_tensors else None
 
         # Compute prompt logprobs if needed.
         prompt_logprobs_dict = self._get_prompt_logprobs_dict(

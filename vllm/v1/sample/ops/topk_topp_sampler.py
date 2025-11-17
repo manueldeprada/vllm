@@ -91,7 +91,7 @@ class TopKTopPSampler(nn.Module):
         logits_to_return = None
         if self.logprobs_mode == "processed_logits":
             logits_to_return = logits
-        elif self.logprobs_mode == "processed_logprobs":
+        elif self.logprobs_mode == "processed_logprobs" or self.logprobs_mode == "raw_processed_logprobs":
             logits_to_return = logits.log_softmax(dim=-1, dtype=torch.float32)
         probs = logits.softmax(dim=-1, dtype=torch.float32)
         return random_sample(probs, generators), logits_to_return

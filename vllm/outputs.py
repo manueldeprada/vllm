@@ -42,6 +42,7 @@ class CompletionOutput:
     token_ids: GenericSequence[int]
     cumulative_logprob: Optional[float]
     logprobs: Optional[SampleLogprobs]
+    cumulative_logprob_at_temperature: Optional[float]
     finish_reason: Optional[str] = None
     stop_reason: Union[int, str, None] = None
     lora_request: Optional[LoRARequest] = None
@@ -159,6 +160,8 @@ class RequestOutput:
                                 next_completion.logprobs)
                         completion.cumulative_logprob = (
                             next_completion.cumulative_logprob)
+                        completion.cumulative_logprob_at_temperature = (
+                            next_completion.cumulative_logprob_at_temperature)
                         completion.finish_reason = next_completion.finish_reason
                         completion.stop_reason = next_completion.stop_reason
                     else:

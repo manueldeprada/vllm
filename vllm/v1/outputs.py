@@ -20,12 +20,14 @@ class LogprobsLists(NamedTuple):
     logprobs: list[list[float]]
     # [num_reqs]
     sampled_token_ranks: list[int]
+    logprobs_at_temperature: Optional[list[list[float]]] = None
 
     def slice(self, start: int, end: int):
         return LogprobsLists(
             self.logprob_token_ids[start:end],
             self.logprobs[start:end],
             self.sampled_token_ranks[start:end],
+            None if self.logprobs_at_temperature is None else self.logprobs_at_temperature[start:end]
         )
 
 
@@ -38,11 +40,12 @@ class LogprobsTensors(NamedTuple):
     # [num_reqs]
     selected_token_ranks: torch.Tensor
 
-    def tolists(self):
+    def tolists(self, logprobs_at_temperature: Optional[torch.Tensor] = None) -> LogprobsLists:
         return LogprobsLists(
             self.logprob_token_ids.tolist(),
             self.logprobs.tolist(),
             self.selected_token_ranks.tolist(),
+            None if logprobs_at_temperature is None else logprobs_at_temperature.tolist()
         )
 
     @staticmethod
@@ -78,7 +81,8 @@ class SamplerOutput:
     # All requests are padded to max_num_generated_tokens.
     # PLACEHOLDER_TOKEN_ID (-1 by default) is used for padding.
     sampled_token_ids: torch.Tensor
-    logprobs_tensors: Optional[LogprobsTensors]
+    raw_logprobs_tensors: Optional[LogprobsTensors]
+    processed_logprobs_tensors: Optional[LogprobsTensors]
 
 
 @dataclass

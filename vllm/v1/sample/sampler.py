@@ -76,8 +76,9 @@ class Sampler(nn.Module):
         # This is different from the V0 sampler, which uses the logits that
         # is used for sampling (after penalties and temperature scaling).
         num_logprobs = sampling_metadata.max_num_logprobs
+        raw_logprobs = None
         if num_logprobs is not None:
-            if self.logprobs_mode == "raw_logprobs":
+            if self.logprobs_mode == "raw_logprobs" or self.logprobs_mode == "raw_processed_logprobs":
                 raw_logprobs = self.compute_logprobs(logits)
             elif self.logprobs_mode == "raw_logits":
                 raw_logprobs = logits.clone()
@@ -98,8 +99,6 @@ class Sampler(nn.Module):
 
         # Sample the next token.
         sampled, processed_logprobs = self.sample(logits, sampling_metadata)
-        if processed_logprobs is not None:
-            raw_logprobs = processed_logprobs
         # Convert sampled token ids to int64 (long) type to ensure compatibility
         # with subsequent operations that may use these values as indices.
         # This conversion is necessary because FlashInfer sampling operations
@@ -108,8 +107,14 @@ class Sampler(nn.Module):
 
         # Gather the logprobs of the topk and sampled token (if requested).
         # Get logprobs and rank tensors (if requested)
-        logprobs_tensors = None if num_logprobs is None else \
-            self.gather_logprobs(raw_logprobs, num_logprobs, token_ids=sampled)
+        raw_logprobs_tensors = None 
+        if (num_logprobs is not None) and (raw_logprobs is not None):
+            raw_logprobs_tensors = self.gather_logprobs(
+                raw_logprobs, num_logprobs, token_ids=sampled)
+        processed_logprobs_tensors = None
+        if (num_logprobs is not None) and (processed_logprobs is not None):
+            processed_logprobs_tensors = self.gather_logprobs(
+                processed_logprobs, num_logprobs, token_ids=sampled)
 
         # Use int32 to reduce the tensor size.
         sampled = sampled.to(torch.int32)
@@ -120,7 +125,8 @@ class Sampler(nn.Module):
             # [num_requests, 1], where each row represents one generated
             # token per request.
             sampled_token_ids=sampled.unsqueeze(-1),
-            logprobs_tensors=logprobs_tensors,
+            raw_logprobs_tensors=raw_logprobs_tensors,
+            processed_logprobs_tensors=processed_logprobs_tensors,
         )
         return sampler_output
 
@@ -161,7 +167,7 @@ class Sampler(nn.Module):
                 if sampling_metadata.max_num_logprobs is not None:
                     if self.logprobs_mode == "processed_logits":
                         processed_logprobs = logits
-                    elif self.logprobs_mode == "processed_logprobs":
+                    elif self.logprobs_mode == "processed_logprobs" or self.logprobs_mode == "raw_processed_logprobs":
                         processed_logprobs = self.compute_logprobs(logits)
                 return greedy_sampled, processed_logprobs
 
