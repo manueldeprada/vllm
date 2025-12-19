@@ -76,7 +76,7 @@ ConvertOption = Literal["auto", ConvertType]
 TokenizerMode = Literal["auto", "hf", "slow", "mistral", "deepseek_v32"]
 ModelDType = Literal["auto", "half", "float16", "bfloat16", "float", "float32"]
 LogprobsMode = Literal[
-    "raw_logits", "raw_logprobs", "processed_logits", "processed_logprobs"
+    "raw_logits", "raw_logprobs", "processed_logits", "processed_logprobs", "raw_processed_logprobs"
 ]
 HfOverrides = dict[str, Any] | Callable[[PretrainedConfig], PretrainedConfig]
 ModelImpl = Literal["auto", "vllm", "transformers", "terratorch"]

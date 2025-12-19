@@ -326,6 +326,7 @@ class RequestState:
             token_ids=token_ids,
             logprobs=logprobs,
             cumulative_logprob=self.logprobs_processor.cumulative_logprob,
+            cumulative_logprob_at_temperature=self.logprobs_processor.cumulative_logprob_at_temperature,
             finish_reason=str(finish_reason) if finished else None,
             stop_reason=stop_reason if finished else None,
         )

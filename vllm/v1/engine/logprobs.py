@@ -36,6 +36,7 @@ class LogprobsProcessor:
     cumulative_logprob: float | None
     num_logprobs: int | None
     num_prompt_logprobs: int | None
+    cumulative_logprob_at_temperature: float | None = None
 
     @classmethod
     def from_new_request(
@@ -62,6 +63,7 @@ class LogprobsProcessor:
             ),
             num_prompt_logprobs=num_prompt_logprobs,
             num_logprobs=num_logprobs,
+            cumulative_logprob_at_temperature=(None if num_logprobs is None else 0.),
         )
 
     def _update_sample_logprobs(self, logprobs_lists: LogprobsLists) -> None:
@@ -79,10 +81,11 @@ class LogprobsProcessor:
         assert self.logprobs is not None
         assert self.cumulative_logprob is not None
 
-        token_ids_lst, logprobs_lst, ranks_lst, _ = logprobs_lists
+        token_ids_lst, logprobs_lst, ranks_lst, _, logprobs_at_t_lst = logprobs_lists
+        logprobs_at_t_lst = logprobs_at_t_lst if logprobs_at_t_lst is not None else [None] * len(token_ids_lst)
 
-        for rank_np, logprobs_np, token_ids_np in zip(
-            ranks_lst, logprobs_lst, token_ids_lst
+        for rank_np, logprobs_np, token_ids_np, logprobs_t in zip(
+            ranks_lst, logprobs_lst, token_ids_lst, logprobs_at_t_lst
         ):
             rank = rank_np.tolist()
             logprobs = logprobs_np.tolist()
@@ -96,7 +99,9 @@ class LogprobsProcessor:
 
             # Sampler puts the sampled logprob in first.
             sampled_token_logprob = logprobs[0]
+            sampled_token_logprob_at_temperature = logprobs_t[0] if logprobs_t is not None else 0.0
             self.cumulative_logprob += sampled_token_logprob
+            self.cumulative_logprob_at_temperature += sampled_token_logprob_at_temperature
 
             # Update with the Logprob container for this pos.
             append_logprobs_for_next_position(

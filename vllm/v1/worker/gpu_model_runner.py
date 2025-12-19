@@ -2614,7 +2614,7 @@ class GPUModelRunner(
 
         num_sampled_tokens = sampler_output.sampled_token_ids.shape[0]
         sampled_token_ids = sampler_output.sampled_token_ids
-        logprobs_tensors = sampler_output.logprobs_tensors
+        logprobs_tensors = sampler_output.raw_logprobs_tensors or sampler_output.processed_logprobs_tensors
         invalid_req_indices = []
         cu_num_tokens: list[int] | None = None
         if not self.use_async_scheduling:
@@ -2687,7 +2687,13 @@ class GPUModelRunner(
             req_state.output_token_ids.extend(sampled_ids)
 
         logprobs_lists = (
-            logprobs_tensors.tolists(cu_num_tokens)
+            logprobs_tensors.tolists(cu_num_tokens,
+                logprobs_at_temperature=(
+                    sampler_output.processed_logprobs_tensors.logprobs
+                    if sampler_output.raw_logprobs_tensors and sampler_output.processed_logprobs_tensors
+                    else None
+                )
+            )
             if not self.use_async_scheduling and logprobs_tensors is not None
             else None
         )

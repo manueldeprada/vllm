@@ -31,6 +31,7 @@ class LogprobsLists(NamedTuple):
     # decoding where the number of generated tokens may be
     # different for each request.
     cu_num_generated_tokens: list[int] | None = None
+    logprobs_at_temperature: list[list[float]] | None = None
 
     def slice_request(self, req_idx: int, num_positions: int):
         if self.cu_num_generated_tokens is not None:
@@ -41,6 +42,7 @@ class LogprobsLists(NamedTuple):
             self.logprobs[req_idx:end_idx],
             self.sampled_token_ranks[req_idx:end_idx],
             None,
+            None if self.logprobs_at_temperature is None else self.logprobs_at_temperature[req_idx:end_idx]
         )
 
 
@@ -52,12 +54,13 @@ class LogprobsTensors(NamedTuple):
     # [num_reqs x num_generated_tokens]
     selected_token_ranks: torch.Tensor
 
-    def tolists(self, cu_num_generated_tokens: list[int] | None = None):
+    def tolists(self, cu_num_generated_tokens: list[int] | None = None, logprobs_at_temperature: torch.Tensor | None = None):
         return LogprobsLists(
             self.logprob_token_ids.cpu().numpy(),
             self.logprobs.cpu().numpy(),
             self.selected_token_ranks.cpu().numpy(),
             cu_num_generated_tokens,
+            None if logprobs_at_temperature is None else logprobs_at_temperature.tolist()
         )
 
     def to_cpu_nonblocking(self) -> "LogprobsTensors":
@@ -101,7 +104,8 @@ class SamplerOutput:
     # All requests are padded to max_num_generated_tokens.
     # PLACEHOLDER_TOKEN_ID (-1 by default) is used for padding.
     sampled_token_ids: torch.Tensor
-    logprobs_tensors: LogprobsTensors | None
+    raw_logprobs_tensors: LogprobsTensors | None
+    processed_logprobs_tensors: LogprobsTensors | None
 
 
 @dataclass
